@@ -6,8 +6,8 @@
     <title>Wordle 游戏</title>
     <style>
         :root {
-            var(--tile-size: min(60px, calc(20vw - 12px)));
-        } 
+            --tile-size: min(60px, calc(20vw - 12px));
+        }
 
         body {
             font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
@@ -37,7 +37,7 @@
         }
         .controls {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
         }
         select, button {
@@ -51,7 +51,25 @@
             border: 2px solid #d3d6da;
             background-color: white;
             color: #1a1a1b;
+            padding: 8px 4px;
         }
+        
+        /* 提示按钮样式 */
+        #hint-btn {
+            background-color: #c9b458;
+            color: white;
+            border: none;
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+        #hint-btn:hover:not(:disabled) {
+            background-color: #b5a24f;
+        }
+        #hint-btn:disabled {
+            background-color: #d3d6da;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
         #restart-btn {
             background-color: #787c7e;
             color: white;
@@ -62,7 +80,6 @@
             background-color: #565758;
         }
 
-        /* 修改了 message 的样式以支持多行文本（因为释义可能很长） */
         #message {
             min-height: 20px;
             height: auto;
@@ -96,8 +113,8 @@
             justify-content: center;
         }
         .tile {
-            width: min(60px, calc(20vw - 12px));
-            height: min(60px, calc(20vw - 12px));
+            width: var(--tile-size);
+            height: var(--tile-size);
             border: 2px solid #d3d6da;
             display: inline-flex;
             justify-content: center;
@@ -167,6 +184,8 @@
                 <option value="6">6 字母</option>
                 <option value="7">7 字母</option>
             </select>
+            <!-- 新增的提示按钮 -->
+            <button id="hint-btn" onclick="useHint()">提示</button>
             <button id="restart-btn" onclick="restartGame()">重新开始</button>
         </div>
     </div>
@@ -183,17 +202,22 @@
         const ROW_COUNT = 6;
         let COL_COUNT = 5; 
         
-        let wordListData = []; // 存储包含对象 {original, lower, def} 的完整列表
-        let dictionary = [];   // 仅存储全小写单词，用于快速判断输入是否合法
-        let currentTarget = null; // 当前目标单词对象
+        let wordListData = []; 
+        let dictionary = [];   
+        let currentTarget = null; 
         
         let currentRow = 0;
         let currentCol = 0;
         let isGameOver = false;
 
+        // 提示功能的状态变量
+        let hintUsed = false;
+        let discoveredLetters = new Set(); // 记录已经被发现的正确/存在的字母
+
         const board = document.getElementById("board");
         const keyboard = document.getElementById("keyboard");
         const messageEl = document.getElementById("message");
+        const hintBtn = document.getElementById("hint-btn");
 
         const keyboardRows = [
             ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
@@ -245,9 +269,10 @@
             });
         }
 
-        function showMessage(msg, duration = 2000) {
+        // 修改：加入了颜色参数，用于区分报错（红）和提示（黄）
+        function showMessage(msg, duration = 2000, color = "#d71111") {
             messageEl.innerText = msg;
-            messageEl.style.color = "#d71111";
+            messageEl.style.color = color;
             if (duration > 0) {
                 setTimeout(() => {
                     if (messageEl.innerText === msg) messageEl.innerText = "";
@@ -267,7 +292,12 @@
             currentCol = 0;
             isGameOver = false;
 
-            // 随机抽取一个单词对象
+            // 重置提示功能
+            hintUsed = false;
+            discoveredLetters.clear();
+            hintBtn.disabled = false;
+            hintBtn.innerText = "提示";
+
             currentTarget = wordListData[Math.floor(Math.random() * wordListData.length)];
 
             console.log(`${COL_COUNT}字母模式，新答案是:`, currentTarget.original);
@@ -286,6 +316,36 @@
             keys.forEach(key => {
                 key.classList.remove("correct", "present", "absent");
             });
+        }
+
+        // --- 新增：使用提示功能 ---
+        function useHint() {
+            if (isGameOver || hintUsed || !currentTarget) return;
+
+            // 获取目标单词中所有不重复的字母
+            let targetLetters = new Set(currentTarget.lower.split(''));
+            
+            // 筛选出还没有被发现的字母
+            let undiscovered = [...targetLetters].filter(l => !discoveredLetters.has(l));
+
+            if (undiscovered.length === 0) {
+                // 如果所有字母都被发现了，不消耗提示次数
+                showMessage("目标单词的所有字母都已被发现！", 2000, "#c9b458");
+                return; 
+            }
+
+            // 随机挑选一个未发现的字母
+            let hintLetter = undiscovered[Math.floor(Math.random() * undiscovered.length)];
+
+            // 标记为已使用
+            hintUsed = true;
+            hintBtn.disabled = true;
+            hintBtn.innerText = "已提示";
+
+            // 在虚拟键盘上将该字母点亮为黄色
+            updateKeyboardStatus(hintLetter, 'present');
+
+            showMessage(`💡 提示：目标单词包含字母 [ ${hintLetter.toUpperCase()} ]`, 4000, "#c9b458");
         }
 
         function handleVirtualKeyClick(key) {
@@ -375,19 +435,21 @@
                 let letter = guess[i];
                 let status = tileStatuses[i];
                 
+                // 记录已被发现的正确字母，以供提示系统使用
+                if (status === "correct" || status === "present") {
+                    discoveredLetters.add(letter);
+                }
+
                 tile.classList.add(status);
                 updateKeyboardStatus(letter, status); 
             }
 
-            // 格式化输出的答案字符串：保留原大小写和释义（如果文件里没有释义则不显示破折号）
             const answerDisplay = currentTarget.def 
-                ? `${currentTarget.original}  ——  ${currentTarget.def}`
+                ? `${currentTarget.original}\n${currentTarget.def}`
                 : `${currentTarget.original}`;
 
             if (guess === currentTarget.lower) {
-                // 猜对了，显示绿字 + 答案及释义
-                showMessage(`恭喜你，猜对了！\n${answerDisplay}`, 0);
-                messageEl.style.color = "#6aaa64";
+                showMessage(`恭喜你，猜对了！\n${answerDisplay}`, 0, "#6aaa64");
                 isGameOver = true;
                 return;
             }
@@ -396,76 +458,11 @@
             currentCol = 0;
 
             if (currentRow === ROW_COUNT) {
-                // 猜错了，显示红字 + 答案及释义
                 showMessage(`游戏结束！答案是:\n${answerDisplay}`, 0);
                 isGameOver = true;
             }
         }
 
         function loadDictionary() {
-            showMessage(`正在加载 ${COL_COUNT} 字母词库...`, 0);
-            const fileName = `${COL_COUNT}.wordle`; 
-            
-            fetch(fileName)
-                .then(response => {
-                    if (!response.ok) throw new Error(`无法读取文件: ${fileName}`);
-                    return response.text();
-                })
-                .then(text => {
-                    wordListData = [];
-                    dictionary = [];
-
-                    // 按行分割文件
-                    const lines = text.split(/\r?\n/);
-                    
-                    lines.forEach(line => {
-                        line = line.trim();
-                        if (!line) return;
-
-                        // 使用正   匹配：提取开头的英文字母为单词，后面的所有内容为释义
-                        // 兼容制表符(\t)和空格分隔
-                        const match = line.match(/^([a-zA-Z]+)(?:\s+(.*))?$/);
-                        
-                        if (match) {
-                            const originalWord = match[1];
-                            const definition = match[2] ? match[2].trim() : "";
-                            
-                            // 仅保存长度符合当前模式的单词
-                            if (originalWord.length === COL_COUNT) {
-                                const lowerWord = originalWord.toLowerCase();
-                                wordListData.push({
-                                    original: originalWord,
-                                    lower: lowerWord,
-                                    def: definition
-                                });
-                                dictionary.push(lowerWord);
-                            }
-                        }
-                    });
-                    
-                    if (wordListData.length === 0) {
-                        throw new Error(`${fileName} 为空或没有找到长度为 ${COL_COUNT} 的单词`);
-                    }
-                    
-                    initBoard();
-                    initKeyboard();
-                    restartGame(); 
-                    
-                    messageEl.innerText = "";
-                })
-                .catch(error => {
-                    showMessage(`加载失败：请检查是否存在 ${fileName} 文件！`);
-                    console.error(error);
-                    
-                    initBoard(); 
-                    initKeyboard();
-                    wordListData = [];
-                    dictionary = [];
-                });
-        }
-
-        document.addEventListener("keydown", handlePhysicalInput);
-        loadDictionary();
-    </script>
-</body>
-</html>
+            showMessage(`正在加载 ${COL_COUNT} 字母词库...`,*
+
