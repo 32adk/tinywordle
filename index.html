@@ -6,7 +6,6 @@
     <title>Wordle 游戏</title>
     <style>
         :root {
-            /* 修复了这里的 CSS 语法错误 */
             --tile-size: min(60px, calc(20vw - 12px));
         }
 
@@ -21,6 +20,71 @@
             padding: 10px;
         }
         
+        /* 教程弹窗样式 */
+        #tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999; /* 提高层级 */
+        }
+        #tutorial-modal {
+            background-color: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            width: 85%;
+            max-width: 350px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        #tutorial-modal h2 {
+            margin-top: 0;
+            text-align: center;
+            border-bottom: 1px solid #d3d6da;
+            padding-bottom: 10px;
+        }
+        .tutorial-example {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .tutorial-tile {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }
+        #start-game-btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            background-color: #6aaa64;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            position: relative;
+            z-index: 10000;
+        }
+        #start-game-btn:active {
+            background-color: #5c9656;
+        }
+        
+        /* 主界面样式 */
         #header-container {
             display: flex;
             align-items: center;
@@ -32,105 +96,54 @@
             margin-top: 10px;
             margin-bottom: 15px;
         }
-        h1 {
-            margin: 0;
-            font-size: 2rem;
-        }
-        .controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
+        h1 { margin: 0; font-size: 2rem; }
+        .controls { display: flex; gap: 8px; align-items: center; }
+        
         select, button {
-            padding: 8px 12px;
+            padding: 8px 10px;
             font-size: 14px;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
         }
-        select {
-            border: 2px solid #d3d6da;
-            background-color: white;
-            color: #1a1a1b;
-            padding: 8px 4px;
-        }
+        select { border: 2px solid #d3d6da; background-color: white; color: #1a1a1b; }
         
-        #hint-btn {
-            background-color: #c9b458;
-            color: white;
-            border: none;
-            transition: background-color 0.2s, opacity 0.2s;
-        }
-        #hint-btn:hover:not(:disabled) { background-color: #b5a24f; }
-        #hint-btn:disabled { background-color: #d3d6da; cursor: not-allowed; opacity: 0.8; }
-
-        #restart-btn {
-            background-color: #787c7e;
-            color: white;
-            border: none;
-            transition: background-color 0.2s;
-        }
-        #restart-btn:hover { background-color: #565758; }
+        #hint-btn { background-color: #c9b458; color: white; border: none; }
+        #hint-btn:disabled { background-color: #d3d6da; cursor: not-allowed; }
+        #restart-btn { background-color: #787c7e; color: white; border: none; }
 
         #message {
             min-height: 20px;
-            height: auto;
             font-weight: bold;
             margin-bottom: 15px;
             color: #d71111;
             text-align: center;
             line-height: 1.4;
-            padding: 0 10px;
             word-break: break-word;
         }
         
         #board-wrapper {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            overflow-x: auto;
-            margin-bottom: 20px;
+            width: 100%; display: flex; justify-content: center; overflow-x: auto; margin-bottom: 20px;
         }
-
-        #board {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            padding: 10px;
-            box-sizing: border-box;
-        }
+        #board { display: flex; flex-direction: column; gap: 5px; padding: 10px; }
         .row { display: flex; gap: 5px; justify-content: center; }
         .tile {
-            width: var(--tile-size);
-            height: var(--tile-size);
-            border: 2px solid #d3d6da;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            box-sizing: border-box;
+            width: var(--tile-size); height: var(--tile-size);
+            border: 2px solid #d3d6da; display: inline-flex; justify-content: center;
+            align-items: center; font-size: 2rem; font-weight: bold; text-transform: uppercase;
         }
         .filled { border-color: #878a8c; }
 
         #keyboard {
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 8px;
         }
         .keyboard-row { display: flex; justify-content: center; gap: 6px; }
         .key {
             font-family: inherit; font-weight: bold; font-size: 1.2rem;
             border: 0; padding: 0; height: 58px; border-radius: 4px;
-            cursor: pointer; user-select: none;
-            background-color: #d3d6da; color: #1a1a1b; flex: 1;
-            display: flex; justify-content: center; align-items: center;
-            text-transform: uppercase; transition: background-color 0.1s;
+            cursor: pointer; background-color: #d3d6da; color: #1a1a1b; flex: 1;
+            display: flex; justify-content: center; align-items: center; text-transform: uppercase;
         }
-        .key:active { transform: scale(0.95); }
         .key.wide { flex: 1.5; font-size: 1rem; }
 
         .correct { background-color: #6aaa64 !important; color: white !important; border-color: #6aaa64 !important; }
@@ -140,33 +153,52 @@
 </head>
 <body>
 
+    <!-- 教程弹窗 -->
+    <div id="tutorial-overlay">
+        <div id="tutorial-modal">
+            <h2>Wordle 规则</h2>
+            <p style="font-size: 14px;">在 <strong>6次</strong> 机会内猜出目标单词。</p>
+            <div class="tutorial-example">
+                <div class="tutorial-tile correct">W</div>
+                <span>字母存在，且<strong>位置正确</strong></span>
+            </div>
+            <div class="tutorial-example">
+                <div class="tutorial-tile present">O</div>
+                <span>字母存在，但<strong>位置不对</strong></span>
+            </div>
+            <div class="tutorial-example">
+                <div class="tutorial-tile absent">R</div>
+                <span>单词中<strong>不包含</strong>此字母</span>
+            </div>
+            <!-- 去掉了内联的 onclick，改用 JS 绑定 -->
+            <button id="start-game-btn">开始游戏</button>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
     <div id="header-container">
         <h1>WORDLE</h1>
         <div class="controls">
             <select id="mode-select" onchange="changeMode(this.value)">
-                <option value="3">3 字母</option>
-                <option value="4">4 字母</option>
-                <option value="5" selected>5 字母</option>
-                <option value="6">6 字母</option>
-                <option value="7">7 字母</option>
+                <option value="3">3字母</option>
+                <option value="4">4字母</option>
+                <option value="5" selected>5字母</option>
+                <option value="6">6字母</option>
+                <option value="7">7字母</option>
             </select>
-            <button id="hint-btn" onclick="useHint()">提示</button>
-            <button id="restart-btn" onclick="restartGame()">重新开始</button>
+            <!-- 绑定事件也改到 JS 里 -->
+            <button id="hint-btn">提示</button>
+            <button id="restart-btn">重新开始</button>
         </div>
     </div>
     
-    <div id="message">正在加载词库...</div>
-    
-    <div id="board-wrapper">
-        <div id="board"></div>
-    </div>
-    
+    <div id="message">正在加载游戏...</div>
+    <div id="board-wrapper"><div id="board"></div></div>
     <div id="keyboard"></div>
 
     <script>
         const ROW_COUNT = 6;
         let COL_COUNT = 5; 
-        
         let wordListData = []; 
         let dictionary = [];   
         let currentTarget = null; 
@@ -177,17 +209,30 @@
 
         let hintUsed = false;
         let discoveredLetters = new Set();
+        let tutorialOpen = true;
 
         const board = document.getElementById("board");
         const keyboard = document.getElementById("keyboard");
         const messageEl = document.getElementById("message");
         const hintBtn = document.getElementById("hint-btn");
+        const restartBtn = document.getElementById("restart-btn");
+        const tutorialOverlay = document.getElementById("tutorial-overlay");
+        const startGameBtn = document.getElementById("start-game-btn");
 
         const keyboardRows = [
             ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
             ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
             ['Enter', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'Backspace']
         ];
+
+        // 统一在这里绑定所有按钮的点击事件，最安全可靠
+        startGameBtn.addEventListener("click", () => {
+            tutorialOverlay.style.display = 'none';
+            tutorialOpen = false;
+        });
+
+        hintBtn.addEventListener("click", useHint);
+        restartBtn.addEventListener("click", restartGame);
 
         function initBoard() {
             board.innerHTML = ""; 
@@ -251,45 +296,46 @@
             hintBtn.disabled = false; hintBtn.innerText = "提示";
 
             currentTarget = wordListData[Math.floor(Math.random() * wordListData.length)];
-            console.log(`${COL_COUNT}字母模式，新答案是:`, currentTarget.original);
+            console.log(`${COL_COUNT}字母模式答案:`, currentTarget.original);
 
             messageEl.innerText = "";
-
             for (let r = 0; r < ROW_COUNT; r++) {
                 for (let c = 0; c < COL_COUNT; c++) {
                     let tile = document.getElementById(`tile-${r}-${c}`);
                     tile.innerText = ""; tile.className = "tile"; 
                 }
             }
-            const keys = document.querySelectorAll(".key");
-            keys.forEach(key => key.classList.remove("correct", "present", "absent"));
+            document.querySelectorAll(".key").forEach(k => k.classList.remove("correct", "present", "absent"));
         }
 
         function useHint() {
-            if (isGameOver || hintUsed || !currentTarget) return;
+            if (isGameOver || hintUsed || !currentTarget || tutorialOpen) return;
             let targetLetters = new Set(currentTarget.lower.split(''));
             let undiscovered = [...targetLetters].filter(l => !discoveredLetters.has(l));
 
             if (undiscovered.length === 0) {
-                showMessage("目标单词的所有字母都已被发现！", 2000, "#c9b458");
-                return; 
+                showMessage("所有字母都已被发现！", 2000, "#c9b458"); return; 
             }
 
             let hintLetter = undiscovered[Math.floor(Math.random() * undiscovered.length)];
             hintUsed = true; hintBtn.disabled = true; hintBtn.innerText = "已提示";
-            updateKeyboardStatus(hintLetter, 'present');
-            showMessage(`💡 提示：目标单词包含字母 [ ${hintLetter.toUpperCase()} ]`, 4000, "#c9b458");
+            
+            const keyBtn = document.getElementById(`key-${hintLetter}`);
+            if (keyBtn && !keyBtn.classList.contains('correct')) {
+                keyBtn.classList.add('present');
+            }
+            showMessage(`💡 提示：包含字母 [ ${hintLetter.toUpperCase()} ]`, 4000, "#c9b458");
         }
 
         function handleVirtualKeyClick(key) {
-            if (isGameOver) return;
+            if (isGameOver || tutorialOpen) return;
             if (key === "Enter") submitGuess();
             else if (key === "Backspace") deleteLetter();
             else addLetter(key);
         }
 
         function handlePhysicalInput(e) {
-            if (isGameOver) return;
+            if (isGameOver || tutorialOpen) return;
             const key = e.key;
             if (key === "Enter") submitGuess();
             else if (key === "Backspace") deleteLetter();
@@ -312,28 +358,13 @@
             }
         }
 
-        function updateKeyboardStatus(letter, status) {
-            const keyBtn = document.getElementById(`key-${letter}`);
-            if (!keyBtn) return;
-            if (keyBtn.classList.contains('correct')) return;
-            if (keyBtn.classList.contains('present') && status === 'absent') return;
-            keyBtn.classList.remove('absent', 'present', 'correct');
-            keyBtn.classList.add(status);
-        }
-
         function submitGuess() {
-            if (currentCol !== COL_COUNT) {
-                showMessage("字母数量不足"); return;
-            }
-
+            if (currentCol !== COL_COUNT) { showMessage("字母数量不足"); return; }
             let guess = "";
             for (let c = 0; c < COL_COUNT; c++) {
                 guess += document.getElementById(`tile-${currentRow}-${c}`).innerText.toLowerCase();
             }
-
-            if (!dictionary.includes(guess)) {
-                showMessage("不在单词列表中"); return;
-            }
+            if (!dictionary.includes(guess)) { showMessage("不在单词列表中"); return; }
 
             let targetLetterCount = {};
             for (let i = 0; i < COL_COUNT; i++) {
@@ -342,13 +373,11 @@
             }
 
             let tileStatuses = new Array(COL_COUNT).fill("absent");
-
             for (let i = 0; i < COL_COUNT; i++) {
                 if (guess[i] === currentTarget.lower[i]) {
                     tileStatuses[i] = "correct"; targetLetterCount[guess[i]] -= 1;
                 }
             }
-
             for (let i = 0; i < COL_COUNT; i++) {
                 if (tileStatuses[i] === "absent" && targetLetterCount[guess[i]] > 0) {
                     tileStatuses[i] = "present"; targetLetterCount[guess[i]] -= 1;
@@ -358,65 +387,63 @@
             for (let i = 0; i < COL_COUNT; i++) {
                 let tile = document.getElementById(`tile-${currentRow}-${i}`);
                 let letter = guess[i]; let status = tileStatuses[i];
-                
                 if (status === "correct" || status === "present") discoveredLetters.add(letter);
-                tile.classList.add(status); updateKeyboardStatus(letter, status); 
+                tile.classList.add(status);
+                
+                const keyBtn = document.getElementById(`key-${letter}`);
+                if (keyBtn && !keyBtn.classList.contains('correct')) {
+                    if (!(keyBtn.classList.contains('present') && status === 'absent')) {
+                        keyBtn.classList.remove('absent', 'present', 'correct');
+                        keyBtn.classList.add(status);
+                    }
+                }
             }
 
             const answerDisplay = currentTarget.def ? `${currentTarget.original}\n${currentTarget.def}` : `${currentTarget.original}`;
-
             if (guess === currentTarget.lower) {
                 showMessage(`恭喜你，猜对了！\n${answerDisplay}`, 0, "#6aaa64");
                 isGameOver = true; return;
             }
 
             currentRow++; currentCol = 0;
-
             if (currentRow === ROW_COUNT) {
-                showMessage(`游戏结束！答案是:\n${answerDisplay}`, 0);
+                showMessage(`结束！答案:\n${answerDisplay}`, 0);
                 isGameOver = true;
             }
         }
 
         function loadDictionary() {
-            // 提示正在加载（duration = 0 意味着如果不被覆盖就会一直显示）
-            showMessage(`正在加载 ${COL_COUNT} 字母词库...`, 0);
+            showMessage(`加载 ${COL_COUNT} 字母词库中...`, 0);
             const fileName = `${COL_COUNT}.wordle`; 
             
             fetch(fileName)
                 .then(response => {
-                    if (!response.ok) throw new Error(`HTTP 状态码: ${response.status}`);
+                    if (!response.ok) throw new Error(`HTTP状态: ${response.status}`);
                     return response.text();
                 })
                 .then(text => {
                     wordListData = []; dictionary = [];
                     const lines = text.split(/\r?\n/);
-                    
                     lines.forEach(line => {
                         line = line.trim();
                         if (!line) return;
                         const match = line.match(/^([a-zA-Z]+)(?:\s+(.*))?$/);
                         if (match) {
-                            const originalWord = match[1];
-                            const definition = match[2] ? match[2].trim() : "";
-                            
-                            if (originalWord.length === COL_COUNT) {
-                                const lowerWord = originalWord.toLowerCase();
-                                wordListData.push({ original: originalWord, lower: lowerWord, def: definition });
-                                dictionary.push(lowerWord);
+                            const oWord = match[1];
+                            const def = match[2] ? match[2].trim() : "";
+                            if (oWord.length === COL_COUNT) {
+                                const lWord = oWord.toLowerCase();
+                                wordListData.push({ original: oWord, lower: lWord, def: def });
+                                dictionary.push(lWord);
                             }
                         }
                     });
-                    
-                    if (wordListData.length === 0) throw new Error(`文件里没有 ${COL_COUNT} 个字母的单词`);
-                    
+                    if (wordListData.length === 0) throw new Error(`文件空或无符合长度单词`);
                     initBoard(); initKeyboard(); restartGame(); messageEl.innerText = "";
                 })
                 .catch(error => {
-                    // 修复：加入 duration=0，让报错信息永久显示，方便找原因
-                    showMessage(`加载失败: 找不到文件 ${fileName} 或格式错误\n${error.message}`, 0);
-                    console.error("词库加载错误:", error);
-                    initBoard(); initKeyboard(); wordListData = []; dictionary = [];
+                    showMessage(`加载词库失败：${fileName}\n错误：${error.message}`, 0);
+                    initBoard(); initKeyboard();
                 });
         }
 
