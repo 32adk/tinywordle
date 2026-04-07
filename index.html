@@ -6,7 +6,10 @@
     <title>Wordle 游戏</title>
     <style>
         :root {
-            --tile-size: min(60px, calc(20vw - 12px));
+            /* 新增动态列数变量，默认为5 */
+            --col-count: 5;
+            /* 完美适配算法：(100vw屏幕宽度 - 安全边距) / 动态列数。最大不超过 60px */
+            --tile-size: min(60px, calc((100vw - 50px) / var(--col-count)));
         }
 
         body {
@@ -31,7 +34,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 9999; /* 提高层级 */
+            z-index: 9999;
         }
         #tutorial-modal {
             background-color: white;
@@ -123,14 +126,14 @@
         }
         
         #board-wrapper {
-            width: 100%; display: flex; justify-content: center; overflow-x: auto; margin-bottom: 20px;
+            width: 100%; display: flex; justify-content: center; margin-bottom: 20px;
         }
-        #board { display: flex; flex-direction: column; gap: 5px; padding: 10px; }
+        #board { display: flex; flex-direction: column; gap: 5px; padding: 5px; }
         .row { display: flex; gap: 5px; justify-content: center; }
         .tile {
             width: var(--tile-size); height: var(--tile-size);
             border: 2px solid #d3d6da; display: inline-flex; justify-content: center;
-            align-items: center; font-size: 2rem; font-weight: bold; text-transform: uppercase;
+            align-items: center; font-size: calc(var(--tile-size) * 0.6); font-weight: bold; text-transform: uppercase;
         }
         .filled { border-color: #878a8c; }
 
@@ -170,7 +173,6 @@
                 <div class="tutorial-tile absent">R</div>
                 <span>单词中<strong>不包含</strong>此字母</span>
             </div>
-            <!-- 去掉了内联的 onclick，改用 JS 绑定 -->
             <button id="start-game-btn">开始游戏</button>
         </div>
     </div>
@@ -186,7 +188,6 @@
                 <option value="6">6字母</option>
                 <option value="7">7字母</option>
             </select>
-            <!-- 绑定事件也改到 JS 里 -->
             <button id="hint-btn">提示</button>
             <button id="restart-btn">重新开始</button>
         </div>
@@ -225,7 +226,6 @@
             ['Enter', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'Backspace']
         ];
 
-        // 统一在这里绑定所有按钮的点击事件，最安全可靠
         startGameBtn.addEventListener("click", () => {
             tutorialOverlay.style.display = 'none';
             tutorialOpen = false;
@@ -285,6 +285,8 @@
 
         function changeMode(modeStr) {
             COL_COUNT = parseInt(modeStr);
+            // 同步更新 CSS 变量，确保格子大小动态适配
+            document.documentElement.style.setProperty('--col-count', COL_COUNT);
             loadDictionary(); 
         }
 
