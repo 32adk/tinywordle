@@ -6,9 +6,7 @@
     <title>Wordle 游戏</title>
     <style>
         :root {
-            /* 新增动态列数变量，默认为5 */
             --col-count: 5;
-            /* 完美适配算法：(100vw屏幕宽度 - 安全边距) / 动态列数。最大不超过 60px */
             --tile-size: min(60px, calc((100vw - 50px) / var(--col-count)));
         }
 
@@ -134,8 +132,23 @@
             width: var(--tile-size); height: var(--tile-size);
             border: 2px solid #d3d6da; display: inline-flex; justify-content: center;
             align-items: center; font-size: calc(var(--tile-size) * 0.6); font-weight: bold; text-transform: uppercase;
+            transition: border-color 0.2s; /* 让边框颜色变化更平滑 */
         }
         .filled { border-color: #878a8c; }
+
+        /* --- 新增：抖动动画与错误边框样式 --- */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.4s;
+        }
+        .shake .tile {
+            border-color: #d71111 !important; /* 抖动时边框变红 */
+        }
+        /* ---------------------------------- */
 
         #keyboard {
             width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 8px;
@@ -160,7 +173,7 @@
     <div id="tutorial-overlay">
         <div id="tutorial-modal">
             <h2>Wordle 规则</h2>
-            <p style="font-size: 14px;">系统会随机生成一个未知单词，你需要在 <strong>6次</strong> 机会内猜出目标单词。单词输入完毕后请点击<strong>ENTER</strong>确认</p>
+            <p style="font-size: 14px;">在 <strong>6次</strong> 机会内猜出目标单词。</p>
             <div class="tutorial-example">
                 <div class="tutorial-tile correct">W</div>
                 <span>字母存在，且<strong>位置正确</strong></span>
@@ -189,7 +202,7 @@
                 <option value="7">7字母</option>
             </select>
             <button id="hint-btn">提示</button>
-            <button id="restart-btn">重新开始</button>
+            <button id="restart-btn">重来</button>
         </div>
     </div>
     
@@ -283,9 +296,20 @@
             }
         }
 
+        // 新增：行抖动动画辅助函数
+        function shakeCurrentRow() {
+            const currentRowEl = document.getElementById(`row-${currentRow}`);
+            if (currentRowEl) {
+                currentRowEl.classList.add("shake");
+                // 动画时间为0.4秒，结束后移除类以便下次能再次触发
+                setTimeout(() => {
+                    currentRowEl.classList.remove("shake");
+                }, 400); 
+            }
+        }
+
         function changeMode(modeStr) {
             COL_COUNT = parseInt(modeStr);
-            // 同步更新 CSS 变量，确保格子大小动态适配
             document.documentElement.style.setProperty('--col-count', COL_COUNT);
             loadDictionary(); 
         }
@@ -361,12 +385,24 @@
         }
 
         function submitGuess() {
-            if (currentCol !== COL_COUNT) { showMessage("字母数量不足"); return; }
+            // 如果字母没填满，抖动并提示
+            if (currentCol !== COL_COUNT) { 
+                shakeCurrentRow();
+                showMessage("字母数量不足"); 
+                return; 
+            }
+            
             let guess = "";
             for (let c = 0; c < COL_COUNT; c++) {
                 guess += document.getElementById(`tile-${currentRow}-${c}`).innerText.toLowerCase();
             }
-            if (!dictionary.includes(guess)) { showMessage("不在单词列表中"); return; }
+            
+            // 如果单词不在词库中，抖动并提示
+            if (!dictionary.includes(guess)) { 
+                shakeCurrentRow();
+                showMessage("不在单词列表中"); 
+                return; 
+            }
 
             let targetLetterCount = {};
             for (let i = 0; i < COL_COUNT; i++) {
